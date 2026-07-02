@@ -1,6 +1,8 @@
-# WzSLinker Improved
+# EasyLink (原 WzSLinker Improved)
 
-基于 WzSLinker V8.2 的改进版本，包含优化的股票识别算法和全新的 Python 桌面端。
+基于 [WzSLinker](https://hrfocus.top/tutorial.html) V8.2 的改进版开源实现，包含优化的股票识别算法和全新的 Python 桌面端。
+
+> 原作者 [祝先生Bruce](https://space.bilibili.com/354560516) 已有新进展，开发了功能更全面的**付费版本 WzSLinker V9.2**，支持更多功能与更好的体验，详见 [hrfocus.top](https://hrfocus.top/tutorial.html)。
 
 ## 项目结构
 
