@@ -8,10 +8,9 @@ __pycache__/
 venv/
 env/
 
-# Build
+# Build output (generated)
 build/
 dist/
-*.spec
 
 # Logs
 logs/
