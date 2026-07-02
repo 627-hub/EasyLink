@@ -86,7 +86,7 @@ class SystemTray:
 
     def wndproc(self, hwnd, msg, wparam, lparam):
         if msg == win32con.WM_COMMAND:
-            cmd = lparam
+            cmd = win32api.LOWORD(wparam)
             if cmd == ID_TRAY_SHOW:
                 self._show_status()
             elif cmd == ID_TRAY_UPDATE:
