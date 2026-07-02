@@ -4,12 +4,27 @@
 
 > 原作者 [祝先生Bruce](https://space.bilibili.com/354560516) 已有新进展，开发了功能更全面的**付费版本 WzSLinker V9.2**，支持更多功能与更好的体验，详见 [hrfocus.top](https://hrfocus.top/tutorial.html)。
 
+## 下载
+
+从本仓库的 [Releases 页面](../../releases) 下载预编译的 `EasyLink.exe`，解压即用，无需安装 Python。
+
+## 自行构建
+
+```bash
+pip install -r requirements.txt
+pip install pyinstaller
+pyinstaller build.spec
+```
+
+构建产物在 `dist/` 目录。
+
 ## 项目结构
 
 ```
-wzslinker-dev/
 ├── app.py                    # Flask 主应用
+├── build.spec                # PyInstaller 构建配置
 ├── config.py                 # 配置管理
+├── installer.iss             # Inno Setup 安装包脚本
 ├── requirements.txt          # Python 依赖
 ├── update_stock_list.py      # 股票词典更新脚本
 ├── data/
@@ -22,11 +37,12 @@ wzslinker-dev/
 ├── utils/
 │   ├── window_finder.py      # 窗口查找工具
 │   └── message_sender.py     # 消息发送工具
-└── extension/                # 改进版浏览器扩展
+└── extension/                # 浏览器扩展 (Manifest V3)
     ├── manifest.json
     ├── content-script.js     # 核心识别算法
     ├── background.js
     ├── popup.html/js
+    ├── icon16/48/128.png     # 像素风图标
     └── stock-data.json
 ```
 
