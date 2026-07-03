@@ -11,7 +11,6 @@ KEYEVENTF_KEYDOWN = 0
 KEYEVENTF_KEYUP = 0x0002
 
 VK_CONTROL = 0x11
-VK_DELETE = 0x2E
 VK_RETURN = 0x0D
 VK_G = 0x47
 
@@ -75,12 +74,7 @@ class TongHuaShunLinker(BaseLinker):
         _key(VK_G, True)
         _key(VK_CONTROL, True)
 
-        time.sleep(0.08)
-
-        _key(VK_DELETE)
-        time.sleep(0.01)
-        _key(VK_DELETE, True)
-        time.sleep(0.02)
+        time.sleep(0.1)
 
         for ch in stock_code:
             vk = ord(ch.upper()) if ch.isalpha() else ord(ch) if ch.isdigit() else 0
