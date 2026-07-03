@@ -17,11 +17,26 @@ class TongHuaShunLinker(BaseLinker):
                 return windows[0]
         return None
 
-    def _press_key(self, vk):
-        user32.keybd_event(vk, 0, 0, 0)
-        time.sleep(0.015)
-        user32.keybd_event(vk, 0, 0x0002, 0)
-        time.sleep(0.015)
+    def _key(self, vk, down=True):
+        flag = 0 if down else 0x0002
+        user32.keybd_event(vk, 0, flag, 0)
+
+    def _chord(self, *keys):
+        for k in keys:
+            self._key(k, True)
+            time.sleep(0.01)
+        for k in reversed(keys):
+            self._key(k, False)
+            time.sleep(0.01)
+
+    def _type(self, text):
+        for ch in text:
+            vk = ord(ch.upper()) if ch.isalpha() else ord(ch) if ch.isdigit() else 0
+            if vk:
+                self._key(vk, True)
+                time.sleep(0.01)
+                self._key(vk, False)
+                time.sleep(0.01)
 
     def link(self, stock_code):
         hwnd = self.find_window()
@@ -29,18 +44,17 @@ class TongHuaShunLinker(BaseLinker):
             raise Exception(f'{self.name}: 未找到窗口')
 
         user32.SetForegroundWindow(hwnd)
-        time.sleep(0.12)
-
-        self._press_key(0x11)
-        self._press_key(0x47)
         time.sleep(0.15)
 
-        self._press_key(0x2E)
+        self._chord(0x11, 0x47)
+        time.sleep(0.2)
 
-        for ch in stock_code:
-            vk = ord(ch.upper()) if ch.isalpha() else ord(ch) if ch.isdigit() else 0
-            if vk:
-                self._press_key(vk)
+        self._key(0x2E, True)
+        self._key(0x2E, False)
+        time.sleep(0.05)
 
-        self._press_key(0x0D)
+        self._type(stock_code)
+
+        self._key(0x0D, True)
+        self._key(0x0D, False)
         return True
