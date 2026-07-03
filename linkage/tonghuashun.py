@@ -76,6 +76,13 @@ class TongHuaShunLinker(BaseLinker):
 
         time.sleep(0.1)
 
+        _key(VK_CONTROL)
+        _key(0x41)
+        time.sleep(0.01)
+        _key(0x41, True)
+        _key(VK_CONTROL, True)
+        time.sleep(0.03)
+
         for ch in stock_code:
             vk = ord(ch.upper()) if ch.isalpha() else ord(ch) if ch.isdigit() else 0
             if vk:
