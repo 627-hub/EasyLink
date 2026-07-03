@@ -1,9 +1,24 @@
 import ctypes
+import ctypes.wintypes
 import time
 from .base import BaseLinker
 from utils.window_finder import find_windows_by_title
 
 user32 = ctypes.windll.user32
+kernel32 = ctypes.windll.kernel32
+
+KEYEVENTF_KEYDOWN = 0
+KEYEVENTF_KEYUP = 0x0002
+
+VK_CONTROL = 0x11
+VK_DELETE = 0x2E
+VK_RETURN = 0x0D
+VK_G = 0x47
+
+
+def _key(vk, up=False):
+    user32.keybd_event(vk, 0, KEYEVENTF_KEYUP if up else KEYEVENTF_KEYDOWN, 0)
+
 
 class TongHuaShunLinker(BaseLinker):
     def __init__(self):
@@ -17,44 +32,66 @@ class TongHuaShunLinker(BaseLinker):
                 return windows[0]
         return None
 
-    def _key(self, vk, down=True):
-        flag = 0 if down else 0x0002
-        user32.keybd_event(vk, 0, flag, 0)
-
-    def _chord(self, *keys):
-        for k in keys:
-            self._key(k, True)
-            time.sleep(0.01)
-        for k in reversed(keys):
-            self._key(k, False)
-            time.sleep(0.01)
-
-    def _type(self, text):
-        for ch in text:
-            vk = ord(ch.upper()) if ch.isalpha() else ord(ch) if ch.isdigit() else 0
-            if vk:
-                self._key(vk, True)
-                time.sleep(0.01)
-                self._key(vk, False)
-                time.sleep(0.01)
+    def _find_view(self, parent):
+        """查找主视图子窗口用于 AttachThreadInput 设焦"""
+        def cb(hwnd, lp):
+            buf = ctypes.create_unicode_buffer(256)
+            user32.GetClassNameW(hwnd, buf, 256)
+            if 'AfxFrameOrView' in buf.value:
+                views.append(hwnd)
+            return True
+        WndEnumProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
+        views = []
+        user32.EnumChildWindows(parent, WndEnumProc(cb), 0)
+        return views[0] if views else None
 
     def link(self, stock_code):
         hwnd = self.find_window()
         if not hwnd:
             raise Exception(f'{self.name}: 未找到窗口')
 
+        target_tid = user32.GetWindowThreadProcessId(hwnd, None)
+        current_tid = kernel32.GetCurrentThreadId()
+
+        attached = False
+        if target_tid != current_tid:
+            attached = bool(user32.AttachThreadInput(current_tid, target_tid, True))
+
+        view = self._find_view(hwnd) if attached else None
+        if view:
+            user32.SetFocus(view)
+            user32.SetActiveWindow(hwnd)
+            time.sleep(0.02)
+
+        if target_tid != current_tid and attached:
+            user32.AttachThreadInput(current_tid, target_tid, False)
+
         user32.SetForegroundWindow(hwnd)
-        time.sleep(0.15)
+        time.sleep(0.03)
 
-        self._chord(0x11, 0x47)
-        time.sleep(0.2)
+        _key(VK_CONTROL)
+        _key(VK_G)
+        time.sleep(0.01)
+        _key(VK_G, True)
+        _key(VK_CONTROL, True)
 
-        self._key(0x2E, True)
-        self._key(0x2E, False)
-        time.sleep(0.05)
+        time.sleep(0.08)
 
-        self._type(stock_code)
+        _key(VK_DELETE)
+        time.sleep(0.01)
+        _key(VK_DELETE, True)
+        time.sleep(0.02)
 
-        self._key(0x0D, True)
-        self._key(0x0D, False)
+        for ch in stock_code:
+            vk = ord(ch.upper()) if ch.isalpha() else ord(ch) if ch.isdigit() else 0
+            if vk:
+                _key(vk)
+                time.sleep(0.005)
+                _key(vk, True)
+                time.sleep(0.005)
+
+        _key(VK_RETURN)
+        time.sleep(0.01)
+        _key(VK_RETURN, True)
+
         return True
