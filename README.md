@@ -2,6 +2,8 @@
 
 基于 [WzSLinker](https://hrfocus.top/tutorial.html) V8.2 的改进版开源实现，包含优化的股票识别算法和全新的 Python 桌面端。
 
+> **⚠️ 平台支持：仅 Windows**。联动层依赖 Win32 API（通达信 Stock 消息广播、同花顺键盘模拟、win32 窗口查找/托盘），行情软件联动仅在 Windows 桌面端可用。macOS 暂不支持，也无移植计划。
+
 > 原作者 [祝先生Bruce](https://space.bilibili.com/354560516) 已有新进展，开发了功能更全面的**付费版本 WzSLinker V9.2**，支持更多功能与更好的体验，详见 [hrfocus.top](https://hrfocus.top/tutorial.html)。
 
 ## 下载
