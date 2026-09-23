@@ -83,6 +83,7 @@ class SystemTray:
         self.hwnd = None
         self.nid = None
         self.server_thread = None
+        self._nid_lock = threading.Lock()
 
     def wndproc(self, hwnd, msg, wparam, lparam):
         if msg == win32con.WM_COMMAND:
@@ -155,20 +156,21 @@ class SystemTray:
         win32gui.PostMessage(self.hwnd, win32con.WM_NULL, 0, 0)
 
     def _notify(self, text):
-        if self.nid:
-            self.nid = (self.nid[0], self.nid[1], self.nid[2], self.nid[3], self.nid[4], text)
-            win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, self.nid)
+        with self._nid_lock:
+            if self.nid:
+                self.nid = (self.nid[0], self.nid[1], self.nid[2], self.nid[3], self.nid[4], text)
+                win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, self.nid)
 
     def _show_status(self):
         stock_dict = load_stock_dict()
-        markets = {'A': 0, 'HK': 0, 'US': 0}
+        markets = {'SH': 0, 'SZ': 0, 'HK': 0, 'US': 0}
         for v in stock_dict.values():
             m, _ = parse_stock_code(v)
             markets[m] = markets.get(m, 0) + 1
         msg = (f'EasyLink 联动服务\n\n'
-               f'A股: {markets.get("A", 0)} 只\n'
-               f'港股: {markets.get("HK", 0)} 只\n'
-               f'美股: {markets.get("US", 0)} 只\n'
+               f'A股: {markets["SH"] + markets["SZ"]} 只\n'
+               f'港股: {markets["HK"]} 只\n'
+               f'美股: {markets["US"]} 只\n'
                f'监听端口: {HOST}:{PORT}\n'
                f'服务状态: 运行中')
         win32gui.MessageBox(self.hwnd, msg, 'EasyLink', win32con.MB_OK | win32con.MB_ICONINFORMATION)
@@ -189,10 +191,10 @@ class SystemTray:
             self._notify(f'更新出错: {e}')
 
     def _quit(self):
-        if self.nid:
-            win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, self.nid)
+        with self._nid_lock:
+            if self.nid:
+                win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, self.nid)
         win32gui.PostQuitMessage(0)
-        os._exit(0)
 
 
 def main():

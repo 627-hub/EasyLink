@@ -23,7 +23,11 @@ class DongFangCaiFuLinker(BaseLinker):
         if not hwnd:
             raise Exception(f'{self.name}: 未找到窗口')
 
-        user32.SetForegroundWindow(hwnd)
+        if not str(stock_code).isdigit():
+            raise ValueError(f'{self.name}: 非法股票代码 {stock_code!r}（应为数字代码）')
+
+        if not user32.SetForegroundWindow(hwnd):
+            raise Exception(f'{self.name}: 无法将窗口置前（SetForegroundWindow 失败）')
         time.sleep(0.1)
 
         VK_CONTROL = 0x11
@@ -42,10 +46,9 @@ class DongFangCaiFuLinker(BaseLinker):
         time.sleep(0.05)
 
         for char in stock_code:
-            if char.isdigit():
-                vk = int(char) + 0x30
-                user32.keybd_event(vk, 0, 0, 0)
-                user32.keybd_event(vk, 0, 0x0002, 0)
+            vk = int(char) + 0x30
+            user32.keybd_event(vk, 0, 0, 0)
+            user32.keybd_event(vk, 0, 0x0002, 0)
             time.sleep(0.02)
 
         VK_RETURN = 0x0D

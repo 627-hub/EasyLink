@@ -5,7 +5,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code: request.code, name: request.name }),
         })
-        .then(resp => resp.json())
+        .then(resp => {
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            return resp.json();
+        })
         .then(data => sendResponse({ success: true, data }))
         .catch(err => sendResponse({ success: false, error: err.message }));
         return true;

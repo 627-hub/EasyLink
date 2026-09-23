@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 from app import app, linkers
@@ -16,10 +17,14 @@ def test_stock_dict():
         ("宁德时代", "300750"),
     ]
     
+    failures = 0
     for name, expected_code in test_cases:
         actual_code = stock_dict.get(name, "未找到")
-        status = "✓" if actual_code == expected_code else "✗"
+        ok = actual_code == expected_code
+        failures += 0 if ok else 1
+        status = "✓" if ok else "✗"
         print(f"  {status} {name}: {actual_code} (期望: {expected_code})")
+    return failures
 
 def test_linkers():
     print("\n" + "=" * 50)
@@ -31,8 +36,10 @@ def test_linkers():
 
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == 'test':
-        test_stock_dict()
+        failures = test_stock_dict()
         test_linkers()
+        sys.exit(1 if failures else 0)
     else:
         print(f"启动服务: {HOST}:{PORT}")
-        app.run(host=HOST, port=PORT, debug=True)
+        debug = os.environ.get('EASYLINK_DEBUG') == '1'
+        app.run(host=HOST, port=PORT, debug=debug)

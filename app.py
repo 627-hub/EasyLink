@@ -13,9 +13,16 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
+_ALLOWED_ORIGIN_PREFIXES = ('chrome-extension://', 'moz-extension://')
+_ALLOWED_ORIGINS = {f'http://127.0.0.1:{PORT}', f'http://localhost:{PORT}'}
+
+
 @app.after_request
 def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
+    origin = request.headers.get('Origin')
+    if origin and (origin.startswith(_ALLOWED_ORIGIN_PREFIXES)
+                   or origin in _ALLOWED_ORIGINS):
+        response.headers['Access-Control-Allow-Origin'] = origin
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     return response
@@ -25,6 +32,16 @@ linkers = {
     'tonghuashun': TongHuaShunLinker(),
     'dongfangcaifu': DongFangCaiFuLinker(),
 }
+
+
+def _market_counts(stock_dict):
+    """按市场统计（parse_stock_code 返回 SH/SZ/HK/US；A股 = SH + SZ）"""
+    counts = {'SH': 0, 'SZ': 0, 'HK': 0, 'US': 0}
+    for v in stock_dict.values():
+        m, _ = parse_stock_code(v)
+        counts[m] = counts.get(m, 0) + 1
+    counts['A'] = counts['SH'] + counts['SZ']
+    return counts
 
 @app.route('/api/linkage', methods=['POST'])
 def linkage():
@@ -60,10 +77,7 @@ def get_stock_dict():
 @app.route('/api/status', methods=['GET'])
 def status():
     stock_dict = load_stock_dict()
-    markets = {'A': 0, 'HK': 0, 'US': 0}
-    for v in stock_dict.values():
-        m, _ = parse_stock_code(v)
-        markets[m] = markets.get(m, 0) + 1
+    markets = _market_counts(stock_dict)
     status_info = {
         'version': '1.0.0',
         'stock_count': len(stock_dict),
@@ -130,10 +144,7 @@ def get_logs():
 if __name__ == '__main__':
     logger.info(f'EasyLink 启动 - {HOST}:{PORT}')
     stock_dict = load_stock_dict()
-    markets = {'A': 0, 'HK': 0, 'US': 0}
-    for v in stock_dict.values():
-        m, _ = parse_stock_code(v)
-        markets[m] = markets.get(m, 0) + 1
-    logger.info(f'股票词典: {len(stock_dict)} 只 (A股{markets.get("A",0)} 港股{markets.get("HK",0)} 美股{markets.get("US",0)})')
+    markets = _market_counts(stock_dict)
+    logger.info(f'股票词典: {len(stock_dict)} 只 (A股{markets["A"]} 港股{markets["HK"]} 美股{markets["US"]})')
     start_scheduler()
     app.run(host=HOST, port=PORT, debug=False)

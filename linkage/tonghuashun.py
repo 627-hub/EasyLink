@@ -56,14 +56,15 @@ class TongHuaShunLinker(BaseLinker):
         if target_tid != current_tid:
             attached = bool(user32.AttachThreadInput(current_tid, target_tid, True))
 
-        view = self._find_view(hwnd) if attached else None
-        if view:
-            user32.SetFocus(view)
-            user32.SetActiveWindow(hwnd)
-            time.sleep(0.02)
-
-        if target_tid != current_tid and attached:
-            user32.AttachThreadInput(current_tid, target_tid, False)
+        try:
+            view = self._find_view(hwnd) if attached else None
+            if view:
+                user32.SetFocus(view)
+                user32.SetActiveWindow(hwnd)
+                time.sleep(0.02)
+        finally:
+            if target_tid != current_tid and attached:
+                user32.AttachThreadInput(current_tid, target_tid, False)
 
         user32.SetForegroundWindow(hwnd)
         time.sleep(0.03)

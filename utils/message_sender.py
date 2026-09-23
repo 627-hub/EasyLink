@@ -13,8 +13,10 @@ def get_stock_msg_id():
     return _stock_msg_id
 
 def send_message_to_tongdaxin(hwnd, stock_code):
-    code_str = str(stock_code)
-    code_int = int(stock_code)
+    code_str = str(stock_code).strip()
+    if not code_str.isdigit():
+        raise ValueError(f'非法股票代码: {stock_code!r}（应为数字代码）')
+    code_int = int(code_str)
     prefix = 7 if code_str.startswith(('6', '5')) else 6
     wparam = prefix * 1000000 + code_int
 
@@ -22,7 +24,7 @@ def send_message_to_tongdaxin(hwnd, stock_code):
     if msg_id == 0:
         return False
 
-    return user32.PostMessageW(HWND_BROADCAST, msg_id, wparam, 0) != 0
+    return user32.PostMessageW(hwnd, msg_id, wparam, 0) != 0
 
 def send_message_generic(hwnd, message, wparam=0, lparam=0):
     result = user32.SendMessageW(hwnd, message, wparam, lparam)

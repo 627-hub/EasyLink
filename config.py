@@ -3,6 +3,7 @@ import sys
 import json
 import logging
 import logging.handlers
+import tempfile
 
 if getattr(sys, 'frozen', False):
     BASE_DIR = sys._MEIPASS
@@ -74,12 +75,21 @@ def load_stock_dict():
 
 
 def save_stock_dict(data):
-    """保存股票词典：写入用户数据目录"""
+    """保存股票词典：写入用户数据目录（临时文件 + 原子替换，避免读到半截文件）"""
     if getattr(sys, 'frozen', False):
         save_dir = os.path.join(APP_DIR, 'data')
     else:
         save_dir = DATA_DIR
     os.makedirs(save_dir, exist_ok=True)
     save_path = os.path.join(save_dir, 'stock-data.json')
-    with open(save_path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    fd, tmp_path = tempfile.mkstemp(dir=save_dir, suffix='.tmp')
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp_path, save_path)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise

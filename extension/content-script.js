@@ -34,8 +34,9 @@ console.log('[EasyLink] content-script.js 已加载');
         async loadStockDict() {
             try {
                 const response = await chrome.runtime.sendMessage({ type: 'GET_STOCK_DICT' });
-                if (response && response.data) {
+                if (response && response.data && typeof response.data === 'object') {
                     this.stockData = response.data;
+                    this.buildCodeToName();
                     console.log('[EasyLink] 词典已加载: ' + Object.keys(response.data).length + ' 只');
                     return;
                 }
@@ -47,6 +48,7 @@ console.log('[EasyLink] content-script.js 已加载');
                 const data = await resp.json();
                 if (data && typeof data === 'object' && Object.keys(data).length > 100) {
                     this.stockData = data;
+                    this.buildCodeToName();
                     console.log('[EasyLink] 直连API加载词典: ' + Object.keys(data).length + ' 只');
                     return;
                 }
@@ -55,6 +57,10 @@ console.log('[EasyLink] content-script.js 已加载');
             }
             console.warn('[EasyLink] 所有加载方式失败，使用内置词典(110只)');
             this.stockData = this.getBuiltInDict();
+            this.buildCodeToName();
+        }
+
+        buildCodeToName() {
             this.codeToName = {};
             for (const [name, code] of Object.entries(this.stockData)) {
                 const clean = code.includes(':') ? code.split(':')[1] : code;
@@ -132,13 +138,10 @@ console.log('[EasyLink] content-script.js 已加载');
             if (parent.closest('stock-highlight')) return;
             if (parent.isContentEditable) return;
 
-            let hasMatch = false;
-            const fragment = document.createDocumentFragment();
-            let lastIndex = 0;
+            const matches = [];
 
             this.nameRegex.lastIndex = 0;
             let match;
-
             while ((match = this.nameRegex.exec(text)) !== null) {
                 const name = match[1];
                 const index = match.index;
@@ -148,15 +151,7 @@ console.log('[EasyLink] content-script.js 已加载');
                 if (index > 0 && index + name.length < text.length &&
                     /[\u4e00-\u9fa5]/.test(text[index - 1]) &&
                     /[\u4e00-\u9fa5]/.test(text[index + name.length])) continue;
-
-                hasMatch = true;
-                this.scanCount++;
-
-                if (index > lastIndex) {
-                    fragment.appendChild(document.createTextNode(text.substring(lastIndex, index)));
-                }
-                fragment.appendChild(this.createHighlight(name, code, name));
-                lastIndex = index + name.length;
+                matches.push({ start: index, end: index + name.length, code, label: name, name });
             }
 
             this.stockCodeRegex.lastIndex = 0;
@@ -166,15 +161,23 @@ console.log('[EasyLink] content-script.js 已加载');
                 if (this.isExcludedContext(text, index)) continue;
                 const stockName = this.codeToName[code];
                 if (!stockName) continue;
+                matches.push({ start: index, end: index + 6, code, label: code, name: stockName });
+            }
 
+            matches.sort((a, b) => a.start - b.start);
+
+            const fragment = document.createDocumentFragment();
+            let lastIndex = 0;
+            let hasMatch = false;
+            for (const m of matches) {
+                if (m.start < lastIndex) continue;   // 与已高亮区间重叠，跳过
+                if (m.start > lastIndex) {
+                    fragment.appendChild(document.createTextNode(text.substring(lastIndex, m.start)));
+                }
+                fragment.appendChild(this.createHighlight(m.label, m.code, m.name));
+                lastIndex = m.end;
                 hasMatch = true;
                 this.scanCount++;
-
-                if (index > lastIndex) {
-                    fragment.appendChild(document.createTextNode(text.substring(lastIndex, index)));
-                }
-                fragment.appendChild(this.createHighlight(code, code, stockName));
-                lastIndex = index + 6;
             }
 
             if (hasMatch) {
